@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="RL AccountProfile Rule" type="AttributeGenerator">
+    <Description>Account profile attribute generator</Description>
+    <Source><![CDATA[
+// By Yasas Technologies
+import sailpoint.tools.GeneralException;
+import java.util.Iterator;
+import sailpoint.object.*;
+import java.util.ArrayList;
+import sailpoint.api.*;
+import java.util.List;
+import org.apache.commons.lang.StringUtils;
+
+
+    // Data Element and Flow logic is generated here
+      // maxiteration (int) - From: 1000
+      int maxiteration = 1000;
+      // lastname (String) - From: identity.getAttribute("lastname") with Function: trim
+      String lastname = identity.getAttribute("lastname").trim();
+      // firstname (String) - From: identity.getAttribute("firstname") with Function: trim
+      String firstname = identity.getAttribute("firstname").trim();
+      // zeroconst (int) - From: 0
+      int zeroconst = 0;
+      // genrusername (String) - From: generateUsername(firstname, lastname, zeroconst)
+      String genrusername = generateUsername(firstname, lastname, zeroconst);
+    
+// Final return value
+    return genrusername;
+public String isUnique(String username) {
+      // appname (String) - From: application.getName()
+      String appname = application.getName();
+      // accountexists (boolean) - From: idn.accountExistsByDisplayName(appname, username)
+      boolean accountexists = idn.accountExistsByDisplayName(appname, username);
+    
+      if (accountexists == true) {
+        // retfalse (boolean) - From: false
+        return retfalse;
+      }
+      else {
+        // rettrue (boolean) - From: true
+        return rettrue;
+      }
+}
+
+public String generateUsername(String firstname, String lastname, int iteration) {
+      // trimlastname (String) - From: lastname with Function: trim
+      String trimlastname = lastname.trim();
+      // trimfirstname (String) - From: firstname with Function: trim
+      String trimfirstname = firstname.trim();
+      // iterationplus (int) - From: iteration with Function: increment
+      int iterationplus = iteration + 1;
+      // iterationminus (int) - From: iteration with Function: decrement
+      int iterationminus = iteration - 1;
+      // usernameconcat1 (String) - From: trimfirstname with Function: concatenate
+      String usernameconcat1 = trimfirstname + "." + trimlastname;
+      // usernameconcat2 (String) - From: usernameconcat1 with Function: concatenate
+      String usernameconcat2 = usernameconcat1 + iterationminus;
+      // isUniquevalue (boolean) - From: isUnique(username)
+      boolean isUniquevalue = isUnique(username);
+      // genreateusername (boolean) - From: generateUsername(firstname,lastname,(iteration + 1))
+      boolean genreateusername = generateUsername(firstname,lastname,(iteration + 1));
+    
+      if (trimfirstname == null || trimlastname == null) {
+        // username (String) - From: null
+        return username;
+      }
+    
+      switch (iteration) {
+        case 0:
+          // username (String) - From: null
+          username = trimfirstname + "." + trimlastname;
+          break;
+        default:
+          // username (String) - From: null
+          username = usernameconcat1 + iterationminus;
+          break;
+      }
+    
+      if (isUniquevalue == true) {
+        // username (String) - From: null
+        return username;
+      }
+      else if (iteration < 1000) {
+        // genreateusername (boolean) - From: generateUsername(firstname,lastname,(iteration + 1))
+        return genreateusername;
+      }
+      else {
+        // denull (String) - From: null
+        return denull;
+      }
+}
+
+    ]]></Source>
+</Rule>

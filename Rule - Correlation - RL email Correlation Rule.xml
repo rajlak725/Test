@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule name="RL email Correlation Rule" type="Correlation">
+  <Description>Correlates based on multiple data elements.</Description>
+  <Source><![CDATA[
+    Map returnMap = new HashMap();
+
+    // Data Elements
+    if (account != null)
+{
+  // emailList (List) - From: account.getAttribute("Email")
+  List emailList = account.getAttribute("Email");
+  // emailLListsize (int) - From: emailList with Function: size
+  int emailLListsize = emailList.size();
+
+  if (emailList != null && emailLListsize > 0)
+  {
+    // firstEmail (String) - From: emailList with Function: get
+    String firstEmail = emailList.get(0);
+  }
+}
+
+    // Final Identity Attribute Assignment
+    returnMap.put("identityAttributeName", "email");
+returnMap.put("identityAttributeValue", "firstEmail");
+
+    return returnMap;
+  ]]></Source>
+</Rule>

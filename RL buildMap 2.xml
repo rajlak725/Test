@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule name="RL buildMap 2" type="BuildMap">
+<Description>This rule performs transformations on selected attributes.</Description>
+<Signature>
+<Inputs>
+    <Argument name="log"/>
+    <Argument name="cols" type="List"/>
+    <Argument name="record" type="List"/>
+    <Argument name="application"/>
+    <Argument name="schema"/>
+</Inputs>
+</Signature>
+<Source><![CDATA[
+//By Yasas Technologies
+
+import sailpoint.connector.DelimitedFileConnector;
+import sailpoint.object.ProvisioningPlan.AccountRequest;
+import sailpoint.object.ProvisioningPlan.AttributeRequest;
+
+Map map = DelimitedFileConnector.defaultBuildMap(cols, record);
+
+ // --- Generated Code ---
+   // data1 (String) - From: map with Function: get
+      String data1 = map.get("access");
+
+ return map;
+
+ ]]></Source>
+ </Rule>

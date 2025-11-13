@@ -1,0 +1,164 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule name="OracleOIC" type="WebServiceBeforeOperationRule">
+  <Description>This rule is used by the  Web Services connector before performing any operation like testconnection, aggregation etc.</Description>
+  <Source><![CDATA[
+import connector.common.JsonUtil;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import sailpoint.connector.webservices.WebServicesClient;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import sailpoint.object.Application;
+import sailpoint.object.Attributes;
+import sailpoint.connector.webservices.EndPoint;
+
+public String performHttpCall(String url, String accessToken, String apiMsg) {
+    WebServicesClient client = new WebServicesClient();
+    Map<String, String> args = new HashMap<>();
+    args.put(WebServicesClient.ARG_URL, url);
+    client.configure(args);
+
+    Map<String, String> header = new HashMap<>();
+    header.put("Authorization", "Bearer " + accessToken);
+    header.put("Content-Type", "application/json");
+
+    List<String> allowedStatuses = new ArrayList<>();
+    allowedStatuses.add("2**");
+
+    String response = client.executeGet(url, header, allowedStatuses);
+    log.error(apiMsg + response);
+
+    return response;
+}
+
+public String getAppRoles(String appId, String accessToken, String baseURL) {
+    String url = baseURL + "/admin/v1/AppRoles?filter=app.value eq \"" + appId + "\"";
+    log.error("Rule - Get App Roles: before access token call... " + url);
+    return performHttpCall(url, accessToken, "Rule - Get App Roles... ");
+}
+
+Map<String, Map> usersDuplicate = new HashMap<>();
+
+public List<Map> processAppRolesGetUsers(String appRoles, String accessToken, String baseURL) {
+    List<Map> users = new ArrayList<>();
+    Map<String, Object> jsonMap = JsonUtil.toMap(appRoles);
+    if (jsonMap != null) {
+        Object resources = jsonMap.get("Resources");
+        if (resources instanceof ArrayList) {
+            log.error("Response from resources: " + resources);
+            ArrayList resourceArray = (ArrayList) resources;
+            log.error("Response from resourcesArray: " + resourceArray);
+            for (Object resource : resourceArray) {
+                log.error("Response from resourceMap: " + resource);
+                if (resource instanceof Map) {
+                    Map resourceMap = (Map) resource;
+                    String appRoleId = (String) resourceMap.get("id");
+                    String appRoleDisplayName = (String) resourceMap.get("displayName");
+                    log.error("Response from appRoles get Id: " + appRoleId + ", Display : " + appRoleDisplayName);
+                    getUsersByAppRoleId(appRoleId, accessToken, baseURL);
+                }
+            }
+        }
+    }
+    users.addAll(usersDuplicate.values());
+    return users;
+}
+
+public void getUsersByAppRoleId(String appRoleId, String accessToken, String baseURL) {
+    String url = baseURL + "/admin/v1/AppRoles/" + appRoleId + "?attributes=members[type eq \"User\"]";
+    log.error("Rule - Get Users: before access token call... " + url);
+
+    String usersResponse = performHttpCall(url, accessToken, "Rule - Get Users... ");
+    Map<String, Object> jsonMap = JsonUtil.toMap(usersResponse);
+    if (jsonMap != null) {
+        Object resources = jsonMap.get("members");
+        if (resources instanceof ArrayList) {
+            log.error("Response from resources: " + resources);
+            ArrayList resourceArray = (ArrayList) resources;
+            log.error("Response from resourcesArray: " + resourceArray);
+
+            for (Object resource : resourceArray) {
+                log.error("Response from resourceMap: " + resource);
+                if (resource instanceof Map) {
+                    Map resourceMap = (Map) resource;
+                    String userId = (String) resourceMap.get("value");
+                    String userName = (String) resourceMap.get("display");
+                    log.error("Response from user get Id: " + appRoleId + ", Display : " + userName);
+                    Map userMap = getUserByUserId(userId, accessToken, baseURL);
+					if (userMap != null) {
+                        Object activeObj = userMap.get("active");
+                        boolean isActive = (activeObj instanceof Boolean) ? (Boolean) activeObj : false;
+
+                        if (!isActive) {
+                            log.debug("Skipping inactive user: " + userName + " (" + userId + ")");
+                            continue; // this immediately jumps to the next iteration of the for loop
+                        }
+
+                        // ✅ Active user → add to usersDuplicate
+
+                    Map tempUserMap = usersDuplicate.get(userId);
+                    List<String> existingRoles;
+                    if (tempUserMap == null) {
+                        existingRoles = new ArrayList<>();
+                        existingRoles.add(appRoleId);
+                    } else {
+                        existingRoles = (List<String>) tempUserMap.get("roles");
+                        if (existingRoles == null) {
+                            existingRoles = new ArrayList<>();
+                        }
+                        existingRoles.add(appRoleId);
+                    }
+                    userMap.put("roles", existingRoles);
+                    usersDuplicate.put(userId, userMap);
+                }
+            }
+        }
+    }
+}
+
+public Map getUserByUserId(String userId, String accessToken, String baseURL) {
+    String url = baseURL + "/admin/v1/Users/" + userId;
+    log.error("Rule - Get User: before access token call... " + url);
+    String userResponse = performHttpCall(url, accessToken, "Rule - Get User... ");
+    return JsonUtil.toMap(userResponse);
+}
+
+String baseURL = application.getAttributeValue("genericWebServiceBaseUrl");
+
+
+String token = requestEndPoint.getHeader().get("Authorization");
+log.error("CustomAccessToken-current##" + token);
+
+Map updatedMapInfo = new HashMap();
+List list = new ArrayList();
+ArrayList<String> Roles = new ArrayList<String>();
+Map response = (Map) JsonUtil.toMap(rawResponseObject);
+int RoleSize = 0;
+String newName;
+List Finallist = new ArrayList();
+List workspace = new ArrayList();
+
+log.error("RULEWS response at start" + response);
+log.error("RULEWS Resources: " + response.get("Resources"));
+if (response.get("Resources") != null) {
+    list = (ArrayList) response.get("Resources");
+    Map responseMap = (Map) list.get(0);
+    String appRoles = getAppRoles((String) responseMap.get("id"), token, baseURL);
+    Finallist = processAppRolesGetUsers(appRoles, token, baseURL);
+}
+
+log.error("RULEWS newmap at end" + newmap);
+log.error("RULEWS Finallist at end" + Finallist);
+log.error("RULEWS processedResponseObject Before is " + processedResponseObject);
+
+updatedMapInfo.put("data", Finallist);
+log.error("RULEWS updatedMapInfo is " + updatedMapInfo);
+
+return updatedMapInfo;
+log.error("RULEWS processedResponseObject after is " + processedResponseObject);
+
+  ]]></Source>
+</Rule>
